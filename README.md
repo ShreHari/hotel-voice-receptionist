@@ -58,7 +58,7 @@ The key design point: the LLM never touches the database directly. It can only a
 Requires Python 3.12 and Chrome (the Web Speech API needs Chrome or Edge).
 
 ```bash
-git clone <this repo>
+git clone https://github.com/ShreHari/hotel-voice-receptionist.git
 cd hotel-voice-receptionist
 python3 -m venv .venv
 ./.venv/bin/pip install -r requirements.txt
