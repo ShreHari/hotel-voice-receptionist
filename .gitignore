@@ -1,0 +1,8 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+data/hotel.db
+.DS_Store
+LEARNING.md
+run.sh

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Grandview Hotel · Aria, AI Voice Receptionist</title>
+<style>
+  :root { --bg:#0f1420; --panel:#161d2e; --line:#26304a; --ink:#e8ecf5; --muted:#8b96ad;
+          --gold:#c9a227; --user:#1d4ed8; --aria:#1e293b; }
+  * { box-sizing:border-box; margin:0; }
+  body { background:var(--bg); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+         min-height:100vh; display:flex; flex-direction:column; align-items:center; }
+  header { text-align:center; padding:28px 16px 10px; }
+  header h1 { font-size:22px; letter-spacing:3px; text-transform:uppercase; }
+  header h1 span { color:var(--gold); }
+  header p { color:var(--muted); font-size:14px; margin-top:6px; }
+  #status { margin:8px auto 0; display:inline-block; font-size:12px; padding:4px 14px; border-radius:999px;
+            border:1px solid var(--line); color:var(--muted); }
+  #status.live { color:#4ade80; border-color:#14532d; }
+  main { width:100%; max-width:760px; flex:1; display:flex; flex-direction:column; padding:12px 16px 130px; }
+  #chat { display:flex; flex-direction:column; gap:12px; }
+  .bubble { max-width:80%; padding:12px 16px; border-radius:14px; line-height:1.5; font-size:15px; white-space:pre-wrap; }
+  .user  { background:var(--user); align-self:flex-end; border-bottom-right-radius:4px; }
+  .aria  { background:var(--aria); align-self:flex-start; border-bottom-left-radius:4px; border:1px solid var(--line); }
+  .tools { align-self:flex-start; display:flex; gap:6px; flex-wrap:wrap; margin-top:-6px; }
+  .tool  { font-size:11px; color:var(--gold); border:1px solid var(--line); padding:2px 10px; border-radius:999px; }
+  #bar { position:fixed; bottom:0; left:0; right:0; background:var(--panel); border-top:1px solid var(--line);
+         display:flex; gap:10px; padding:14px 16px; justify-content:center; }
+  #bar input { flex:1; max-width:520px; background:var(--bg); border:1px solid var(--line); color:var(--ink);
+               border-radius:10px; padding:12px 14px; font-size:15px; outline:none; }
+  button { border:0; border-radius:10px; cursor:pointer; font-size:15px; padding:12px 18px; }
+  #send { background:#334155; color:var(--ink); }
+  #mic  { background:var(--gold); color:#141414; font-weight:600; min-width:120px; }
+  #mic.listening { background:#dc2626; color:#fff; animation:pulse 1.2s infinite; }
+  @keyframes pulse { 50% { opacity:.75; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>The <span>Grandview</span> Hotel</h1>
+  <p>Aria · AI Voice Receptionist · powered by an agent + MCP tools</p>
+  <div id="status">ready</div>
+</header>
+
+<main><div id="chat"></div></main>
+
+<footer style="position:fixed; bottom:74px; left:0; right:0; text-align:center; font-size:11px; color:var(--muted);">
+  Built by Shre Hari Prem Anandh · NexCell Solutions AI Internship assessment
+</footer>
+
+<div id="bar">
+  <button id="mic" onclick="toggleMic()">🎤 Speak</button>
+  <input id="text" placeholder="or type here..." onkeydown="if(event.key==='Enter')sendText()">
+  <button id="send" onclick="sendText()">Send</button>
+</div>
+
+<script>
+const sessionId = "web-" + Math.random().toString(36).slice(2, 10);
+const chat = document.getElementById("chat");
+const statusEl = document.getElementById("status");
+const micBtn = document.getElementById("mic");
+let listening = false;
+let recognition = null;
+
+function setStatus(text, live) {
+  statusEl.textContent = text;
+  statusEl.className = live ? "live" : "";
+}
+
+function addBubble(text, cls) {
+  const div = document.createElement("div");
+  div.className = "bubble " + cls;
+  div.textContent = text;
+  chat.appendChild(div);
+  div.scrollIntoView({ behavior: "smooth" });
+  return div;
+}
+
+function addTools(tools) {
+  if (!tools || !tools.length) return;
+  const wrap = document.createElement("div");
+  wrap.className = "tools";
+  tools.forEach(t => {
+    const chip = document.createElement("span");
+    chip.className = "tool";
+    chip.textContent = "🔧 MCP: " + t;
+    wrap.appendChild(chip);
+  });
+  chat.appendChild(wrap);
+}
+
+function speak(text) {
+  speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  const voices = speechSynthesis.getVoices();
+  const british = voices.find(v => v.lang === "en-GB" && v.name.includes("Female"))
+               || voices.find(v => v.lang === "en-GB") || null;
+  if (british) utter.voice = british;
+  utter.rate = 1.02;
+  utter.onstart = () => setStatus("Aria is speaking...", true);
+  utter.onend = () => setStatus("ready", false);
+  speechSynthesis.speak(utter);
+}
+
+async function send(message) {
+  addBubble(message, "user");
+  setStatus("Aria is thinking...", true);
+  try {
+    const res = await fetch("/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session_id: sessionId, message }),
+    });
+    const data = await res.json();
+    addTools(data.tools_used);
+    addBubble(data.reply, "aria");
+    speak(data.reply);
+  } catch (err) {
+    setStatus("connection error", false);
+    addBubble("Sorry, I could not reach the server.", "aria");
+  }
+}
+
+function sendText() {
+  const input = document.getElementById("text");
+  const value = input.value.trim();
+  if (!value) return;
+  input.value = "";
+  send(value);
+}
+
+function toggleMic() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert("Speech recognition needs Chrome or Edge. You can still type."); return; }
+  if (listening) { recognition.stop(); return; }
+
+  speechSynthesis.cancel();  // barge-in: stop Aria if she is mid-sentence
+  recognition = new SR();
+  recognition.lang = "en-GB";
+  recognition.interimResults = false;
+  recognition.onstart = () => { listening = true; micBtn.textContent = "⏹ Stop"; micBtn.classList.add("listening"); setStatus("listening...", true); };
+  recognition.onend = () => { listening = false; micBtn.textContent = "🎤 Speak"; micBtn.classList.remove("listening"); setStatus("ready", false); };
+  recognition.onresult = (event) => send(event.results[0][0].transcript);
+  recognition.onerror = () => setStatus("mic error, try again", false);
+  recognition.start();
+}
+
+speechSynthesis.getVoices();  // warm up the voice list
+window.addEventListener("load", () => {
+  addBubble("Good day, welcome to The Grandview Hotel. I'm Aria. How can I help with your stay?", "aria");
+});
+</script>
+</body>
+</html>

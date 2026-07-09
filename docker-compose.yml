@@ -1,0 +1,16 @@
+services:
+  aria:
+    build: .                 # build from the local Dockerfile
+    image: aria-receptionist:latest
+    ports:
+      - "8100:8100"          # host:container, same port as the local run for demo consistency
+    env_file:
+      - .env                  # OPENAI_API_KEY arrives at runtime, never baked into the image
+    restart: unless-stopped   # restart on crash or reboot, not on a manual stop
+    healthcheck:
+      # python ping instead of curl, since the slim image has no curl
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8100/health')"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s       # give the app and MCP subprocess time to boot

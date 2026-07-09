@@ -1,0 +1,12 @@
+# keep the image small and free of secrets
+.env
+.venv/
+__pycache__/
+*.pyc
+data/hotel.db
+.git/
+.gitignore
+LEARNING.md
+README.md
+run.sh
+.DS_Store
