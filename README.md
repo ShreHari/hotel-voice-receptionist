@@ -91,6 +91,18 @@ Click the mic and say, for example:
 - **Voice-first prompting.** The system prompt forbids lists and markdown and forces prices to be spoken in pounds, because the replies are read aloud by TTS.
 - **Errors are part of the UX.** If a booking clashes, the tool returns a structured error and Aria explains it and offers an alternative instead of failing.
 
+## How this evolved during the build
+
+A few things changed along the way, usually because testing proved me wrong about something:
+
+- **Voice output got upgraded.** I started with the browser's built-in voice everywhere, to keep the demo free and zero-setup. It worked, but it sounded robotic, and voice quality is one of the evaluation criteria. So replies now go through OpenAI TTS on the server, with the browser voice kept as an automatic fallback so voice output can never fully break.
+- **The welcome screen exists because browsers made me add it.** I wanted Aria to greet guests out loud the moment the page loads. Browsers block audio before the first click, so the page now opens with a start screen, and that one click unlocks the audio. It ended up being a nicer opening anyway, it feels like answering a call.
+- **The mic now reopens after Aria finishes speaking.** Early versions needed a click before every sentence, which felt clunky in testing. Now the conversation is hands free: she answers, the mic opens, you talk. If you stay quiet, recognition just times out.
+- **The system prompt was tuned by listening, not guessing.** In tests Aria read out bulleted lists and quoted prices in dollars for a UK hotel. The prompt now forces short spoken sentences, no lists, and prices in pounds.
+- **The healthcheck had to match the container.** A curl-based healthcheck would fail forever on python slim images because curl is not installed, so the check pings /health with Python instead.
+- **Errors are handled as conversation, not crashes.** Tools return structured JSON errors, like a booking clash, and Aria explains the problem and offers an alternative. I tested this by double-booking a room on purpose.
+- **Docker had one real gotcha.** Running as a non-root user is easy until SQLite needs to write. The Dockerfile creates the data directory and hands ownership to the app user.
+
 ## What is mocked, honestly
 
 The hotel itself (rooms, FAQs) is seeded demo data, and email confirmation is out of scope. Everything else is real: the MCP protocol, the agent loop, the database writes, the clash detection, and the voice pipeline.

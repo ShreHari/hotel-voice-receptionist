@@ -120,7 +120,7 @@ async function speak(text) {
     const blob = await res.blob();
     currentAudio = new Audio(URL.createObjectURL(blob));
     currentAudio.onplay = () => setStatus("Aria is speaking...", true);
-    currentAudio.onended = () => setStatus("ready", false);
+    currentAudio.onended = () => { setStatus("ready", false); autoListen(); };
     await currentAudio.play();
   } catch (err) {
     speakFallback(text);  // browser voice if the endpoint or playback fails
@@ -135,8 +135,15 @@ function speakFallback(text) {
   if (british) utter.voice = british;
   utter.rate = 1.02;
   utter.onstart = () => setStatus("Aria is speaking...", true);
-  utter.onend = () => setStatus("ready", false);
+  utter.onend = () => { setStatus("ready", false); autoListen(); };
   speechSynthesis.speak(utter);
+}
+
+function autoListen() {
+  // hands-free flow: when Aria finishes speaking, open the mic for the guest.
+  // if nobody speaks, recognition simply times out and closes on its own.
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SR && !listening) toggleMic();
 }
 
 async function send(message) {
