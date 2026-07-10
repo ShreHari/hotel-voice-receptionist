@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: aria-hotel-receptionist
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false          # entered securely in the Render dashboard, never in the repo
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
