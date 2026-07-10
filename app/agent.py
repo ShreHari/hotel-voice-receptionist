@@ -88,3 +88,14 @@ class AriaAgent:
             "reply": "Sorry, I had trouble completing that. Could you say it again slightly differently?",
             "tools_used": tools_used,
         }
+
+    async def synthesize(self, text: str) -> bytes:
+        # neural TTS for Aria's voice; the page falls back to the
+        # browser voice if this endpoint is unavailable
+        response = await self.client.audio.speech.create(
+            model="tts-1",
+            voice="nova",
+            input=text,
+            response_format="mp3",
+        )
+        return response.content

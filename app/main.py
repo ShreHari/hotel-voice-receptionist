@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 load_dotenv()  # must run before the OpenAI client is created
 
 from fastapi import FastAPI
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -41,6 +42,10 @@ class ChatRequest(BaseModel):
     message: str
 
 
+class SpeakRequest(BaseModel):
+    text: str
+
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
@@ -49,6 +54,12 @@ def health():
 @app.post("/chat")
 async def chat(request: ChatRequest):
     return await state["agent"].chat(request.session_id, request.message)
+
+
+@app.post("/speak")
+async def speak(request: SpeakRequest):
+    audio = await state["agent"].synthesize(request.text)
+    return Response(content=audio, media_type="audio/mpeg")
 
 
 # serve the voice UI (must be mounted last so /chat and /health win)

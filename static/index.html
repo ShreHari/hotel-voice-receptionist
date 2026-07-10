@@ -89,8 +89,34 @@ function addTools(tools) {
   chat.appendChild(wrap);
 }
 
-function speak(text) {
+let currentAudio = null;
+
+function stopSpeaking() {
   speechSynthesis.cancel();
+  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+}
+
+async function speak(text) {
+  stopSpeaking();
+  try {
+    // preferred voice: neural TTS from the backend
+    const res = await fetch("/speak", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) throw new Error("tts unavailable");
+    const blob = await res.blob();
+    currentAudio = new Audio(URL.createObjectURL(blob));
+    currentAudio.onplay = () => setStatus("Aria is speaking...", true);
+    currentAudio.onended = () => setStatus("ready", false);
+    await currentAudio.play();
+  } catch (err) {
+    speakFallback(text);  // browser voice if the endpoint or playback fails
+  }
+}
+
+function speakFallback(text) {
   const utter = new SpeechSynthesisUtterance(text);
   const voices = speechSynthesis.getVoices();
   const british = voices.find(v => v.lang === "en-GB" && v.name.includes("Female"))
@@ -134,7 +160,7 @@ function toggleMic() {
   if (!SR) { alert("Speech recognition needs Chrome or Edge. You can still type."); return; }
   if (listening) { recognition.stop(); return; }
 
-  speechSynthesis.cancel();  // barge-in: stop Aria if she is mid-sentence
+  stopSpeaking();  // barge-in: stop Aria if she is mid-sentence
   recognition = new SR();
   recognition.lang = "en-GB";
   recognition.interimResults = false;

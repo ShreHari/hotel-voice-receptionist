@@ -41,7 +41,8 @@ The key design point: the LLM never touches the database directly. It can only a
 | Backend | FastAPI + Python 3.12 | suggested stack, async end to end |
 | Agent | Hand-written loop over OpenAI gpt-4o-mini | every step visible and explainable, no framework magic |
 | Tools | MCP Python SDK (FastMCP server + stdio client) | real protocol, not renamed function calling |
-| Voice | Browser Web Speech API | free, zero keys, works in any Chrome, ideal for a live demo |
+| Voice in | Browser Web Speech API (mic) | free, zero keys, works in any Chrome |
+| Voice out | OpenAI neural TTS, browser voice as automatic fallback | natural speech quality; the demo still works even if TTS is unavailable |
 | Database | SQLite | zero setup, easy to inspect and reseed |
 | Frontend | Single static page, vanilla JS | nothing to build, loads instantly |
 
@@ -85,7 +86,7 @@ Click the mic and say, for example:
 ## Design decisions and trade-offs
 
 - **No agent framework.** LangChain and LangGraph are great, but for an assessment the point is to show I understand the agent loop itself: model, tool call, execution, result, repeat. It is about 60 lines and fully mine.
-- **Web Speech API instead of Twilio or ElevenLabs.** Free, no keys, no latency budget, and a reviewer can run the demo with zero setup. In production I would swap this layer for a telephony provider; the backend would not change, which is the benefit of keeping voice at the edge.
+- **Hybrid voice layer.** The mic uses the browser's Web Speech API (free, zero setup), while Aria's replies are synthesised server-side with OpenAI TTS for natural voice quality. If the TTS endpoint is ever unavailable, the page automatically falls back to the browser voice, so the demo cannot lose its voice. This swap also demonstrates the point of keeping voice at the edge: adding neural TTS touched one endpoint and one frontend function, and zero lines of the agent, MCP, or database.
 - **Conversation memory** is per-session, in process, trimmed to the last 30 messages. Enough for a receptionist conversation; a production version would move sessions to Redis.
 - **Voice-first prompting.** The system prompt forbids lists and markdown and forces prices to be spoken in pounds, because the replies are read aloud by TTS.
 - **Errors are part of the UX.** If a booking clashes, the tool returns a structured error and Aria explains it and offers an alternative instead of failing.
@@ -96,7 +97,7 @@ The hotel itself (rooms, FAQs) is seeded demo data, and email confirmation is ou
 
 ## Production voice upgrade path
 
-The browser speech layer is deliberately swappable. In production I would replace it with a telephony or streaming provider such as Twilio Media Streams or LiveKit, feeding call audio into a speech-to-text engine (Deepgram or Whisper). The transcribed text would hit the same /chat endpoint the browser uses today, and replies would be synthesised back to the caller with a TTS voice such as ElevenLabs or OpenAI TTS. The agent loop, MCP tools, and database would not change by a single line, which is exactly why voice lives at the edge of this architecture.
+The voice layer is deliberately swappable, and half of the swap is already done: Aria's replies are synthesised with OpenAI neural TTS today. In production I would complete the picture with a telephony or streaming provider such as Twilio Media Streams or LiveKit, feeding call audio into a speech-to-text engine (Deepgram or Whisper) instead of the browser mic. The transcribed text would hit the same /chat endpoint the browser uses today. The agent loop, MCP tools, and database would not change by a single line, which is exactly why voice lives at the edge of this architecture.
 
 ## If this went to production next
 
