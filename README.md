@@ -94,6 +94,10 @@ Click the mic and say, for example:
 
 The hotel itself (rooms, FAQs) is seeded demo data, and email confirmation is out of scope. Everything else is real: the MCP protocol, the agent loop, the database writes, the clash detection, and the voice pipeline.
 
+## Production voice upgrade path
+
+The browser speech layer is deliberately swappable. In production I would replace it with a telephony or streaming provider such as Twilio Media Streams or LiveKit, feeding call audio into a speech-to-text engine (Deepgram or Whisper). The transcribed text would hit the same /chat endpoint the browser uses today, and replies would be synthesised back to the caller with a TTS voice such as ElevenLabs or OpenAI TTS. The agent loop, MCP tools, and database would not change by a single line, which is exactly why voice lives at the edge of this architecture.
+
 ## If this went to production next
 
 Redis-backed sessions, authentication on the API, a telephony voice layer (Twilio or LiveKit), observability on tool calls, and container deployment. The service is stateless apart from SQLite, so it scales horizontally behind a load balancer.
