@@ -2,6 +2,8 @@
 
 An AI-powered voice receptionist built for the NexCell Solutions AI Intern technical assessment. Aria handles hotel conversations end to end: she checks availability, searches rooms by guest preferences, creates and cancels bookings, and answers hotel FAQs. Every external action goes through a real MCP (Model Context Protocol) server.
 
+**Live deployment:** https://aria-hotel-receptionist.onrender.com (free tier, so the first load after idle can take up to a minute to wake; use Chrome for voice)
+
 Built by Shre Hari Prem Anandh.
 
 ## Architecture
