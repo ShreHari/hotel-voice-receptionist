@@ -33,9 +33,20 @@
   #mic  { background:var(--gold); color:#141414; font-weight:600; min-width:120px; }
   #mic.listening { background:#dc2626; color:#fff; animation:pulse 1.2s infinite; }
   @keyframes pulse { 50% { opacity:.75; } }
+  #gate { position:fixed; inset:0; background:var(--bg); z-index:10; display:flex; flex-direction:column;
+          gap:14px; align-items:center; justify-content:center; text-align:center; padding:20px; }
+  #gate h2 { font-size:26px; letter-spacing:3px; text-transform:uppercase; }
+  #gate h2 span { color:var(--gold); }
+  #gate p { color:var(--muted); }
+  #start { background:var(--gold); color:#141414; font-weight:600; padding:14px 28px; font-size:16px; }
 </style>
 </head>
 <body>
+<div id="gate">
+  <h2>The <span>Grandview</span> Hotel</h2>
+  <p>Aria, our AI receptionist, is ready to speak with you</p>
+  <button id="start" onclick="startExperience()">Start conversation</button>
+</div>
 <header>
   <h1>The <span>Grandview</span> Hotel</h1>
   <p>Aria · AI Voice Receptionist · powered by an agent + MCP tools</p>
@@ -172,9 +183,14 @@ function toggleMic() {
 }
 
 speechSynthesis.getVoices();  // warm up the voice list
-window.addEventListener("load", () => {
-  addBubble("Good day, welcome to The Grandview Hotel. I'm Aria. How can I help with your stay?", "aria");
-});
+
+const GREETING = "Good day, welcome to The Grandview Hotel. I'm Aria. How can I help with your stay?";
+
+function startExperience() {
+  document.getElementById("gate").remove();
+  addBubble(GREETING, "aria");
+  speak(GREETING);  // the click above is the user gesture that unlocks audio
+}
 </script>
 </body>
 </html>
